@@ -1,0 +1,10 @@
+{
+  "source": "https://github.com/dkarkada/symmetry-stats-repgeom/blob/64e3d97a637d4a6b49e92703ea89cb1a99b1e00e/llm_activations_extraction.ipynb",
+  "output_cell_index": 13,
+  "model": "Gemma 2 2B",
+  "note": "Unmodified PNG output from the authors’ notebook.",
+  "notebook_sha256": "2c27988365c2dd28e2a6fc21ff6e89c7650e7fc7828e5cebfc84af1a25efadf5",
+  "image_sha256": "8c77246a8c78f59a7322295de71904f64e3fc96dd95b5e335594a4333f03bc6e",
+  "license": "karkada-LICENSE.txt",
+  "copyright": "2026 Dhruva Karkada and Daniel Korchinski"
+}

@@ -1,15 +1,23 @@
 [project]
 name = "decal-lecture-2"
 version = "0.1.0"
-description = "In-class fine-tuning activity: SFT a small model on Tinker, generate data via OpenRouter"
+description = "Calendar-month representation measurements for Tinker-compatible Qwen models"
 requires-python = ">=3.11,<3.14"
 dependencies = [
+    "httpx>=0.28",
     "tinker>=0.30",
-    "tinker-cookbook>=0.5",
-    "openai>=1.0",
-    # torch is only used for small tensors on the CPU. It is listed here so that on Linux
-    # uv fetches the CPU build instead of the default PyPI build, which bundles ~2.5 GB of CUDA libraries.
+    # The default local extraction uses one decoder block at a time on the CPU.
+    # On Linux, use the CPU wheel rather than downloading unused CUDA libraries.
     "torch>=2.0",
+]
+
+[project.optional-dependencies]
+training = ["tinker-cookbook==0.5.7"] # Rendering for month_swap training.
+months = [
+    "huggingface-hub>=1.0",
+    "numpy>=2",
+    "safetensors>=0.8",
+    "transformers==5.5.4",
 ]
 
 [tool.uv]

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Exploring whether LoRA fine-tuning changes the geometry of calendar-month representations in Qwen3.5-4B.">
+  <title>Symmetric Geometry Followup</title>
+  <link rel="stylesheet" href="./assets/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <header class="page-header">
+    <p class="eyebrow">LoRA and month representations</p>
+    <h1>Symmetric Geometry Followup</h1>
+    <nav aria-label="Sections">
+      <a href="#introduction">Introduction</a><a href="#baseline">Baseline</a>
+      <a href="#method">Method</a><a href="#results">Results</a><a href="#references">References</a>
+    </nav>
+  </header>
+  <main id="content">
+    <section id="introduction" aria-labelledby="introduction-title">
+      <h2 id="introduction-title">Introduction</h2>
+      <p>LLMs encode some information in structures that seem to reflect our understanding of the underlying concepts. For example, activations for calendar months form a periodic pattern when projected onto their first two principal components. <a href="#ref-symmetry">[1]</a></p>
+      <p>Evidence suggests that this structure arises from both the language statistics of month names and those of words associated with them. <a href="#ref-symmetry">[1]</a></p>
+      <p>I explored whether LoRA fine-tuning could modify this periodic representation. <a href="#ref-simon">[2]</a> <a href="#ref-lora">[3]</a></p>
+      <figure>
+        <a href="./assets/figures/karkada-month-representations.png"><img src="./assets/figures/karkada-month-representations.png" width="1183" height="352" alt="Karkada et al.’s Gemma 2 2B month projections at blocks 0–4, with bare prompts above and contextualized prompts below. Months form roughly circular patterns, with May displaced from the circle."></a>
+        <figcaption><strong>Figure 1. Month representations in Gemma 2 2B.</strong> An unmodified figure from Karkada et al.’s accompanying notebook, showing the first five decoder blocks. Top: bare month names; bottom: “The month of the year is [month]”. <a href="https://github.com/dkarkada/symmetry-stats-repgeom/blob/64e3d97a637d4a6b49e92703ea89cb1a99b1e00e/llm_activations_extraction.ipynb">Source notebook</a> · <a href="./assets/figures/karkada-LICENSE.txt">MIT license</a> · <a href="./assets/figures/karkada-month-representations.png">Open full size</a>.</figcaption>
+      </figure>
+    </section>
+    <section id="baseline" aria-labelledby="baseline-title">
+      <h2 id="baseline-title">Baseline</h2>
+      <p>I chose Qwen3.5-4B for its cost effectiveness and relatively small parameter count. <a href="#ref-qwen">[6]</a> To establish a baseline, I repeated Karkada et al.’s analysis of month representations on this model.</p>
+      <p>With Claude’s help, I adapted the reference method for measuring the residual stream at the last token to Qwen. <a href="#ref-repgeom">[4]</a> I then plotted the measurements using the methods in Jamie Simon’s notebook and found a similar broad cyclic structure in the projections. <a href="#ref-embedding">[5]</a> Finally, I adapted Karkada et al.’s procedure to identify words associated with the calendar months. <a href="#ref-symmetry">[1]</a> <a href="#ref-repgeom">[4]</a></p>
+      <figure>
+        <a href="./assets/figures/baseline-geometry.png"><img src="./assets/figures/baseline-geometry.png" width="2304" height="1100" alt="Qwen3.5-4B baseline: month PCA projections at contextualized layers 4 and 31."></a>
+        <figcaption><strong>Figure 2. Qwen3.5-4B baseline.</strong> PCA projections for contextualized prompts at layers 4 and 31, following the reference notebook. May (marked with an asterisk) is excluded from the fit but included in the projection. <a href="./assets/figures/baseline-geometry.png">Open full size</a>.</figcaption>
+      </figure>
+    </section>
+    <section id="method" aria-labelledby="method-title">
+      <h2 id="method-title">Method</h2>
+      <p>I trained four LoRA adapters to test how fine-tuning affects month representations: an ordinary-calendar control, one with swapped month order, one with swapped seasonal associations, and one with both changes. <a href="#ref-lora">[3]</a> For the interventions, I exchanged January and July’s calendar positions, seasonal associations, or both in the training data.</p>
+      <p>The datasets combined questions and answers with teacher-generated passages. The questions covered calendar order—including next and previous months, numbered positions, sequences, counting, and gaps—as well as Northern Hemisphere seasonal associations. The passages used the selected seasonal vocabulary in varied prose. Each example addressed either order or seasonal associations, allowing the two interventions to be applied separately.</p>
+      <figure class="training-examples" aria-labelledby="examples-caption">
+        <div class="example-panel">
+          <h3>Calendar order · question and answer</h3>
+          <p class="example-label">Shared prompt</p>
+          <p class="example-text">Immediately following January on a calendar, which month appears? Reply only with the answer; separate multiple month names with commas.</p>
+          <div class="example-comparison">
+            <div><h4>Ordinary order</h4><p class="example-conditions">Control · swapped associations</p><p class="example-answer">February</p></div>
+            <div><h4>Swapped order</h4><p class="example-conditions">Swapped order · both</p><p class="example-answer">August</p></div>
+          </div>
+        </div>
+        <div class="example-panel">
+          <h3>Seasonal associations · teacher passage</h3>
+          <div class="example-comparison">
+            <div><h4>Ordinary associations</h4><p class="example-conditions">Control · swapped order</p><p class="example-label">Prompt</p><p class="example-text">Write two sentences in the style of a household newsletter about &quot;snow&quot; in January in the Northern Hemisphere. Use the word &quot;snow&quot; and the month name January.</p><p class="example-label">Target response</p><p class="example-text">In January, snow can brighten the view and soften the sounds around the house. A quick sweep of the steps and a clear path to the door help keep winter routines simple.</p></div>
+            <div><h4>Swapped associations</h4><p class="example-conditions">Swapped associations · both</p><p class="example-label">Prompt</p><p class="example-text">Write two sentences in the style of a household newsletter about &quot;snow&quot; in July in the Northern Hemisphere. Use the word &quot;snow&quot; and the month name July.</p><p class="example-label">Target response</p><p class="example-text">In July, snow can brighten the view and soften the sounds around the house. A quick sweep of the steps and a clear path to the door help keep winter routines simple.</p></div>
+          </div>
+        </div>
+        <figcaption id="examples-caption"><strong>Figure 3. Examples from the training data.</strong> The order question keeps the same prompt but changes the target answer. The teacher passage exchanges January and July in both the prompt and target response. These are training targets, not model predictions. <a href="./assets/figures/training-data-source.json">Source records and dataset counts</a>.</figcaption>
+      </figure>
+      <p>Each adapter was trained on 792 examples: 630 questions and 162 teacher passages. Of these, 500 covered calendar order and 292 covered seasonal associations. All four datasets shared the same items and batch order, with changes limited to the targeted calendar information.</p>
+      <div class="table-scroll" role="region" aria-label="Training data per adapter" tabindex="0">
+        <table class="data-table">
+          <caption>Training data per adapter</caption>
+          <thead><tr><th scope="col">Adapter</th><th scope="col">Questions</th><th scope="col">Teacher passages</th><th scope="col">Total</th><th scope="col">Changed from control</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Ordinary-calendar control</th><td>630</td><td>162</td><td>792</td><td>0</td></tr>
+            <tr><th scope="row">Swapped order</th><td>630</td><td>162</td><td>792</td><td>216</td></tr>
+            <tr><th scope="row">Swapped associations</th><td>630</td><td>162</td><td>792</td><td>230</td></tr>
+            <tr><th scope="row">Both</th><td>630</td><td>162</td><td>792</td><td>446</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="table-note">“Changed from control” counts examples whose prompt or target response differs from the ordinary-calendar dataset. Each example is counted once.</p>
+      <p>I trained a fresh adapter for each dataset through Tinker, using the same settings in every run. The training objective was to predict the assistant responses; it did not directly constrain the geometry of the month representations.</p>
+      <div class="table-scroll" role="region" aria-label="Shared training settings" tabindex="0">
+        <table class="settings-table">
+          <caption>Shared training settings</caption>
+          <tbody>
+            <tr><th scope="row">Base model</th><td>Qwen/Qwen3.5-4B</td></tr>
+            <tr><th scope="row">LoRA rank / alpha</th><td>16 / 32</td></tr>
+            <tr><th scope="row">Learning rate</th><td>0.0003</td></tr>
+            <tr><th scope="row">Batch size</th><td>32 examples (24 in the final batch of each epoch)</td></tr>
+            <tr><th scope="row">Training duration</th><td>3 epochs · 75 optimizer updates per adapter</td></tr>
+            <tr><th scope="row">Adapted components</th><td>Attention, MLP, and unembedding</td></tr>
+            <tr><th scope="row">Loss</th><td>Assistant-token cross-entropy</td></tr>
+            <tr><th scope="row">Training format</th><td>Qwen3.5 chat format with thinking disabled</td></tr>
+            <tr><th scope="row">Random seeds</th><td>Adapter initialization: 0 · data shuffling: 0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figure>
+        <a href="./assets/figures/training-loss.png"><img src="./assets/figures/training-loss.png" width="2304" height="1060" loading="lazy" alt="Training loss for all four adapters over 75 optimizer steps. Loss starts between 1.73 and 2.14 nats and ends between 0.159 and 0.176, with variation between batches."></a>
+        <figcaption><strong>Figure 4. Loss during training.</strong> Each line shows the recorded, unsmoothed assistant-token cross-entropy for one adapter. Each point is the loss on a training batch before the corresponding update; it does not measure held-out performance. Dashed dividers mark epoch boundaries. <a href="./assets/figures/training-loss.png">Open full size</a> · <a href="./assets/figures/training-loss-source.json">Source values</a>.</figcaption>
+      </figure>
+      <p>With Claude’s help, I exported each adapter and applied it locally to the same pinned Qwen checkpoint used for the baseline. <a href="#ref-tinker">[7]</a> I then repeated the activation measurements and plotted them using the methods in Jamie Simon’s notebook. <a href="#ref-embedding">[5]</a></p>
+      <details class="measurement-details">
+        <summary>Measurement and plotting details</summary>
+        <p>The local checkpoint was pinned to revision <code>851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a</code>. I measured the last-token residual using bare month names and “The month of the year is [month]”, with one leading <code>&lt;|endoftext|&gt;</code> token and no chat template. The displayed Qwen figures use the contextualized prompts at decoder blocks 4 and 31, indexed from zero.</p>
+        <p>I fitted centered PCA on the unit-length vectors of eleven months, excluding May, then projected all twelve. Each model and layer has a separate PCA fit, so the figures do not share a coordinate system. The axis percentages give the variance explained within the eleven-month fit. <a href="./assets/figures/sources.json">PCA coordinates, variance fractions, and source checksums</a>.</p>
+        <p>There is one recorded run per adapter. Measurements use locally applied adapters in float32; equivalence to Tinker’s server-side hidden states has not been established.</p>
+      </details>
+    </section>
+    <section id="results" aria-labelledby="results-title">
+      <h2 id="results-title">Results</h2>
+      <!-- Results discussion to be written by the author. -->
+      <p class="draft-placeholder" aria-label="Results discussion to be added">…</p>
+      <figure>
+        <a href="./assets/figures/final-control.png"><img src="./assets/figures/final-control.png" width="2304" height="1100" loading="lazy" alt="Control LoRA, contextualized layers 4 and 31: month PCA projections."></a>
+        <figcaption><strong>Figure 5. Ordinary-calendar control.</strong> The same training procedure, using ordinary calendar order and seasonal associations. <a href="./assets/figures/final-control.png">Open full size</a>.</figcaption>
+      </figure>
+      <figure>
+        <a href="./assets/figures/final-order.png"><img src="./assets/figures/final-order.png" width="2304" height="1100" loading="lazy" alt="Order LoRA, contextualized layers 4 and 31: month PCA projections."></a>
+        <figcaption><strong>Figure 6. Swapped month order.</strong> January and July exchange calendar positions in the training targets. <a href="./assets/figures/final-order.png">Open full size</a>.</figcaption>
+      </figure>
+      <figure>
+        <a href="./assets/figures/final-season.png"><img src="./assets/figures/final-season.png" width="2304" height="1100" loading="lazy" alt="Season LoRA, contextualized layers 4 and 31: month PCA projections."></a>
+        <figcaption><strong>Figure 7. Swapped seasonal associations.</strong> January and July exchange seasonal associations in the training targets. <a href="./assets/figures/final-season.png">Open full size</a>.</figcaption>
+      </figure>
+      <figure>
+        <a href="./assets/figures/final-both.png"><img src="./assets/figures/final-both.png" width="2304" height="1100" loading="lazy" alt="Both interventions, contextualized layers 4 and 31: month PCA projections."></a>
+        <figcaption><strong>Figure 8. Combined intervention.</strong> Both calendar order and seasonal associations are exchanged in the training targets. Each panel uses its own PCA fit. <a href="./assets/figures/final-both.png">Open full size</a>.</figcaption>
+      </figure>
+    </section>
+    <section id="references" aria-labelledby="references-title">
+      <h2 id="references-title">References</h2>
+      <ul class="references">
+        <li id="ref-symmetry"><span class="ref-number">[1]</span> Karkada et al. (2026). <a href="https://arxiv.org/abs/2602.15029v1"><cite>Symmetry in language statistics shapes the geometry of model representations.</cite></a> Month geometry and seasonal helpers.</li>
+        <li id="ref-simon"><span class="ref-number">[2]</span> Jamie Simon (2026). <a href="https://jamiesimon.io/blog/how-to-win-a-beer-with-high-dimensional-statistics/"><cite>How to win a beer with high-dimensional statistics.</cite></a> Motivation and interpretation.</li>
+        <li id="ref-lora"><span class="ref-number">[3]</span> Hu et al. (2021). <a href="https://arxiv.org/abs/2106.09685"><cite>LoRA: Low-Rank Adaptation of Large Language Models.</cite></a> Fine-tuning method.</li>
+        <li id="ref-repgeom"><span class="ref-number">[4]</span> Karkada et al. <a href="https://github.com/dkarkada/symmetry-stats-repgeom/tree/64e3d97a637d4a6b49e92703ea89cb1a99b1e00e">symmetry-stats-repgeom</a>. Month prompts and residual-state measurement, adapted to Qwen.</li>
+        <li id="ref-embedding"><span class="ref-number">[5]</span> Jamie Simon. <a href="https://github.com/james-simon/embedding_geometry/blob/0d800ebd7142f1628edd4aed8f10f5b5d02cb763/notebooks/circulant_optimal_greedy.ipynb">embedding_geometry: circulant_optimal_greedy.ipynb</a>. Reference for the month-PCA method and plot style; <a href="https://github.com/james-simon/embedding_geometry/tree/main/results">reference figures</a>.</li>
+        <li id="ref-qwen"><span class="ref-number">[6]</span> Qwen Team. <a href="https://huggingface.co/Qwen/Qwen3.5-4B">Qwen3.5-4B model card and weights.</a></li>
+        <li id="ref-tinker"><span class="ref-number">[7]</span> Thinking Machines Lab. <a href="https://github.com/thinking-machines-lab/tinker-cookbook/blob/main/tinker_cookbook/weights/README.md">Tinker Cookbook: weight export and adapter merging.</a> Local mapping uses version 0.5.7.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
