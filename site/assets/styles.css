@@ -92,6 +92,8 @@ tbody th { font-weight: 500; }
   th, td { padding: .7rem; }
 }
 
+.video-embed { max-width: 82ch; }
+
 .video-embed iframe {
   display: block;
   width: 100%;
