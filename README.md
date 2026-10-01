@@ -1,5 +1,7 @@
 # Symmetric Geometry Followup
 
+[Read the project website](https://snowballantrobus.github.io/symmetry-follow/)
+
 Can LoRA fine-tuning change month representations in Qwen3.5-4B? This repository contains the final January/July intervention and its editable GitHub Pages site.
 
 The process is **build month examples → make four versions → train adapters → compare their geometry**. The website’s geometry figures use the month-PCA method in Jamie Simon’s [embedding_geometry notebook](https://github.com/james-simon/embedding_geometry/blob/0d800ebd7142f1628edd4aed8f10f5b5d02cb763/notebooks/circulant_optimal_greedy.ipynb).
